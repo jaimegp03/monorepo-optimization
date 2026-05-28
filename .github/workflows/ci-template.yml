@@ -1,0 +1,23 @@
+name: Component CI Template
+
+# Este workflow no se ejecuta solo; es llamado por otros (workflow_call)
+on:
+  workflow_call:
+    inputs:
+      component_name:
+        required: true
+        type: string
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Simular instalación y pruebas
+        run: |
+          echo "=== Iniciando Pipeline para: ${{ inputs.component_name }} ==="
+          echo "Instalando dependencias de ${{ inputs.component_name }}..."
+          echo "Ejecutando Tests unitarios..."
+          echo "¡Simulación completada con éxito!"
