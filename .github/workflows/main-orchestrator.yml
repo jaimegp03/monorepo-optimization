@@ -1,6 +1,5 @@
 name: Monorepo Orchestrator
 
-# El pipeline se activa cuando se hace un push o pull request en la rama main
 on:
   push:
     branches: [ main ]
@@ -8,11 +7,10 @@ on:
     branches: [ main ]
 
 jobs:
-  # Job 1: Su único trabajo es escanear qué ha cambiado
+  # El detector de cambios que ya configuramos en la Parte 2
   changes:
     name: "Detectar Cambios en Componentes"
     runs-on: ubuntu-latest
-    # Guardamos los resultados en variables (outputs) para que otros jobs los lean
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
@@ -21,7 +19,6 @@ jobs:
       - name: Descargar codigo del repositorio
         uses: actions/checkout@v4
 
-      # Usamos una acción estándar para mapear los directorios del monorepo
       - name: Evaluar filtros de ruta
         id: filter
         uses: dorny/paths-filter@v3
@@ -33,31 +30,25 @@ jobs:
               - 'backend/**'
             infra:
               - 'infraestructura/**'
-    # Job 2: Pipeline simulado para el Frontend
-    frontend-pipeline:
-        name: "Pipeline Frontend"
-        needs: changes # Espera a que termine el detector
-        if: ${{ needs.changes.outputs.frontend == 'true' }} # Solo corre si cambió el frontend
-        runs-on: ubuntu-latest
-        steps:
-            - name: Instalar y Compilar Frontend
-            run: echo "Ejecutando pruebas y build del componente Frontend..."
-    # Job 3: Pipeline simulado para el Backend
-    backend-pipeline:
-        name: "Pipeline Backend"
-        needs: changes
-        if: ${{ needs.changes.outputs.backend == 'true' }} # Solo corre si cambió el backend
-        runs-on: ubuntu-latest
-        steps:
-            - name: Testear API Backend
-            run: echo "Ejecutando pruebas unitarias del componente Backend..."
 
-    # Job 4: Pipeline simulado para la Infraestructura
-    infra-pipeline:
-        name: "Pipeline Infraestructura"
-        needs: changes
-        if: ${{ needs.changes.outputs.infra == 'true' }} # Solo corre si cambió la infraestructura
-        runs-on: ubuntu-latest
-        steps:
-            - name: Validar Infraestructura
-            run: echo "Ejecutando validacion de scripts de infraestructura..."
+  # OPTIMIZACIÓN: Llamadas condicionales a la plantilla reutilizable
+  frontend-pipeline:
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    uses: ./.github/workflows/ci-template.yml
+    with:
+      component_name: "Frontend Application"
+
+  backend-pipeline:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    uses: ./.github/workflows/ci-template.yml
+    with:
+      component_name: "Backend API"
+
+  infra-pipeline:
+    needs: changes
+    if: ${{ needs.changes.outputs.infra == 'true' }}
+    uses: ./.github/workflows/ci-template.yml
+    with:
+      component_name: "Cloud Infrastructure"
