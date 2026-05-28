@@ -52,3 +52,41 @@ jobs:
     uses: ./.github/workflows/ci-template.yml
     with:
       component_name: "Cloud Infrastructure"
+
+    # 5.1.1 Configurar el Job de Generación de Informe Final
+  reporting:
+    name: "Generar Reporte de Optimizacion"
+    # Obliga a este job a esperar a que terminen absolutamente todos los procesos anteriores
+    needs: [changes, frontend-pipeline, backend-pipeline, infra-pipeline]
+    # Restricción clave: "if: always()" obliga a ejecutar este reporte SIEMPRE, 
+    if: always() 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Escribir Markdown en el resumen de GitHub
+        run: |
+          echo "## 📊 Reporte de Pipelines del Monorepo" >> $GITHUB_STEP_SUMMARY
+          echo "Resumen automatizado de optimización y *selective execution*:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Componente | ¿Tiene cambios? | Estado del Pipeline |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
+          
+          # Condicional para evaluar el Frontend
+          if [ "${{ needs.changes.outputs.frontend }}" = "true" ]; then
+            echo "| 💻 Frontend | ✅ Sí | 🚀 Ejecutado (${{ needs.frontend-pipeline.result }}) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 💻 Frontend | ❌ No | ⏭️ Omitido (Ahorro de Runner) |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Condicional para evaluar el Backend
+          if [ "${{ needs.changes.outputs.backend }}" = "true" ]; then
+            echo "| ⚙️ Backend | ✅ Sí | 🚀 Ejecutado (${{ needs.backend-pipeline.result }}) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| ⚙️ Backend | ❌ No | ⏭️ Omitido (Ahorro de Runner) |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Condicional para evaluar la Infraestructura
+          if [ "${{ needs.changes.outputs.infra }}" = "true" ]; then
+            echo "| 🌐 Infraestructura | ✅ Sí | 🚀 Ejecutado (${{ needs.infra-pipeline.result }}) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🌐 Infraestructura | ❌ No | ⏭️ Omitido (Ahorro de Runner) |" >> $GITHUB_STEP_SUMMARY
+          fi
